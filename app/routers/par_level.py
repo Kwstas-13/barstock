@@ -19,7 +19,7 @@ def create_par_level(par_level: ParLevelCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[ParLevelOut])
 def get_par_levels(db: Session = Depends(get_db)):
-    return db.query(ParLevel).all()
+    return db.query(ParLevel).order_by(ParLevel.id).all()
 
 
 @router.get("/{par_level_id}", response_model=ParLevelOut)
