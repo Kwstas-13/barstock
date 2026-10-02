@@ -3,12 +3,21 @@ import api from "../api/client";
 import ParLevelForm from "../components/ParLevelForm";
 import { formatShift } from "../utils/format";
 
+function calcPercent(ideal, current) {
+  const i = Number(ideal);
+  const c = Number(current);
+  return i > 0 ? Math.round((c / i) * 100) : 0;
+}
+
 function ParLevelsPage() {
   const [parLevels, setParLevels] = useState([]);
   const [products, setProducts] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
     Promise.all([
@@ -46,6 +55,39 @@ function ParLevelsPage() {
     }
   }
 
+  function startEdit(parLevel) {
+    setEditingId(parLevel.id);
+    setEditForm({
+      ideal_quantity_ml: parLevel.ideal_quantity_ml,
+      current_quantity_ml: parLevel.current_quantity_ml,
+      threshold_percent: parLevel.threshold_percent,
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  function handleEditChange(e) {
+    const { name, value } = e.target;
+    setEditForm({ ...editForm, [name]: value });
+  }
+
+  async function saveEdit(id) {
+    try {
+      const res = await api.put(`/par-levels/${id}`, {
+        ideal_quantity_ml: Number(editForm.ideal_quantity_ml),
+        current_quantity_ml: Number(editForm.current_quantity_ml),
+        threshold_percent: Number(editForm.threshold_percent),
+      });
+      setParLevels((prev) => prev.map((pl) => (pl.id === id ? res.data : pl)));
+      setEditingId(null);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      alert(`Η αποθήκευση απέτυχε: ${detail ? JSON.stringify(detail) : err.message}`);
+    }
+  }
+
   if (loading) return <p>Φόρτωση...</p>;
   if (error) return <p>Σφάλμα: {error}</p>;
 
@@ -64,6 +106,7 @@ function ParLevelsPage() {
               <th>Βάρδια</th>
               <th>Ιδανικό</th>
               <th>Τρέχον</th>
+              <th>Όριο</th>
               <th>%</th>
               <th>Κατάσταση</th>
               <th></th>
@@ -71,22 +114,70 @@ function ParLevelsPage() {
           </thead>
           <tbody>
             {parLevels.map((pl) => {
-              const percent =
-                pl.ideal_quantity_ml > 0
-                  ? Math.round((pl.current_quantity_ml / pl.ideal_quantity_ml) * 100)
-                  : 0;
-              const isLow = percent < pl.threshold_percent;
+              const isEditing = editingId === pl.id;
+              const values = isEditing ? editForm : pl;
+
+              const percent = calcPercent(values.ideal_quantity_ml, values.current_quantity_ml);
+              const isLow = percent < Number(values.threshold_percent);
 
               return (
                 <tr key={pl.id} style={isLow ? { backgroundColor: "#ffe5e5" } : undefined}>
                   <td>{productsById[pl.product_id]?.name ?? `#${pl.product_id}`}</td>
                   <td>{formatShift(shiftsById[pl.shift_id])}</td>
-                  <td>{pl.ideal_quantity_ml} ml</td>
-                  <td>{pl.current_quantity_ml} ml</td>
+
+                  {isEditing ? (
+                    <>
+                      <td>
+                        <input
+                          name="ideal_quantity_ml"
+                          type="number"
+                          min="1"
+                          value={editForm.ideal_quantity_ml}
+                          onChange={handleEditChange}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          name="current_quantity_ml"
+                          type="number"
+                          min="0"
+                          value={editForm.current_quantity_ml}
+                          onChange={handleEditChange}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          name="threshold_percent"
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={editForm.threshold_percent}
+                          onChange={handleEditChange}
+                        />
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td>{pl.ideal_quantity_ml} ml</td>
+                      <td>{pl.current_quantity_ml} ml</td>
+                      <td>{pl.threshold_percent}%</td>
+                    </>
+                  )}
+
                   <td>{percent}%</td>
                   <td>{isLow ? "⚠️ Χαμηλό" : "✅ OK"}</td>
                   <td>
-                    <button onClick={() => handleDelete(pl)}>🗑</button>
+                    {isEditing ? (
+                      <>
+                        <button onClick={() => saveEdit(pl.id)}>💾</button>
+                        <button onClick={cancelEdit}>✖</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(pl)}>✏️</button>
+                        <button onClick={() => handleDelete(pl)}>🗑</button>
+                      </>
+                    )}
                   </td>
                 </tr>
               );
