@@ -19,7 +19,7 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[ProductOut])
 def get_products(db: Session = Depends(get_db)):
-    return db.query(Product).all()
+    return db.query(Product).order_by(Product.id).all()
 
 
 @router.get("/{product_id}", response_model=ProductOut)

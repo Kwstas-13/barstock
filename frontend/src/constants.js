@@ -1,0 +1,1 @@
+export const CATEGORIES = ["SPIRIT", "LIQUEUR", "WINE", "BEER", "MIXER", "SYRUP", "OTHER"];

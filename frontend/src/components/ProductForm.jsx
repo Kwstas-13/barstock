@@ -1,7 +1,6 @@
 import { useState } from "react";
 import api from "../api/client";
-
-const CATEGORIES = ["SPIRIT", "LIQUEUR", "WINE", "BEER", "MIXER", "SYRUP", "OTHER"];
+import { CATEGORIES } from "../constants";
 
 const emptyForm = { name: "", category: "SPIRIT", bottle_size_ml: 700 };
 
