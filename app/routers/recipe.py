@@ -19,7 +19,7 @@ def create_recipe(recipe: RecipeCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[RecipeOut])
 def get_recipes(db: Session = Depends(get_db)):
-    return db.query(Recipe).all()
+    return db.query(Recipe).order_by(Recipe.id).all()
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)

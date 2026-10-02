@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink, Navigate } from "react-router-dom";
 import ProductsPage from "./pages/ProductsPage";
 import ParLevelsPage from "./pages/ParLevelsPage";
+import RecipesPage from "./pages/RecipesPage";
 
 function App() {
   const linkStyle = ({ isActive }) => ({
@@ -16,12 +17,14 @@ function App() {
       <nav>
         <NavLink to="/products" style={linkStyle}>Προϊόντα</NavLink>
         <NavLink to="/par-levels" style={linkStyle}>Par Levels</NavLink>
+        <NavLink to="/recipes" style={linkStyle}>Συνταγές</NavLink>
       </nav>
 
       <Routes>
         <Route path="/" element={<Navigate to="/products" replace />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/par-levels" element={<ParLevelsPage />} />
+        <Route path="/recipes" element={<RecipesPage />} />
         <Route path="*" element={<p>Η σελίδα δεν βρέθηκε.</p>} />
       </Routes>
     </div>

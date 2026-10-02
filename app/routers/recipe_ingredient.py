@@ -18,8 +18,11 @@ def create_recipe_ingredient(item: RecipeIngredientCreate, db: Session = Depends
 
 
 @router.get("/", response_model=list[RecipeIngredientOut])
-def get_recipe_ingredients(db: Session = Depends(get_db)):
-    return db.query(RecipeIngredient).all()
+def get_recipe_ingredients(recipe_id: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(RecipeIngredient)
+    if recipe_id is not None:
+        query = query.filter(RecipeIngredient.recipe_id == recipe_id)
+    return query.order_by(RecipeIngredient.id).all()
 
 
 @router.get("/{item_id}", response_model=RecipeIngredientOut)
