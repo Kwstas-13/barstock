@@ -1,8 +1,9 @@
 import { useState } from "react";
 import api from "../api/client";
 import { CATEGORIES } from "../constants";
+import { toNumberOrNull } from "../utils/format";
 
-const emptyForm = { name: "", category: "SPIRIT", bottle_size_ml: 700 };
+const emptyForm = { name: "", category: "SPIRIT", bottle_size_ml: 700, bottle_cost: "" };
 
 function ProductForm({ onCreated }) {
   const [form, setForm] = useState(emptyForm);
@@ -24,6 +25,7 @@ function ProductForm({ onCreated }) {
         name: form.name.trim(),
         category: form.category,
         bottle_size_ml: Number(form.bottle_size_ml),
+        bottle_cost: toNumberOrNull(form.bottle_cost),
       });
       onCreated(res.data);
       setForm(emptyForm);
@@ -62,6 +64,16 @@ function ProductForm({ onCreated }) {
         required
       />
       <span> ml </span>
+
+      <input
+        name="bottle_cost"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Κόστος (€)"
+        value={form.bottle_cost}
+        onChange={handleChange}
+      />
 
       <button type="submit" disabled={saving}>
         {saving ? "Αποθήκευση..." : "Προσθήκη"}

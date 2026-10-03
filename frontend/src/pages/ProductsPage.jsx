@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../api/client";
 import ProductForm from "../components/ProductForm";
 import { CATEGORIES } from "../constants";
+import { formatEuro, formatCostPerMl, toNumberOrNull } from "../utils/format";
 
-const emptyForm = { name: "", category: "SPIRIT", bottle_size_ml: 700 };
 function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,7 @@ function ProductsPage() {
       name: product.name,
       category: product.category,
       bottle_size_ml: product.bottle_size_ml,
+      bottle_cost: product.bottle_cost ?? "",
     });
   }
 
@@ -60,6 +61,7 @@ function ProductsPage() {
         name: editForm.name.trim(),
         category: editForm.category,
         bottle_size_ml: Number(editForm.bottle_size_ml),
+        bottle_cost: toNumberOrNull(editForm.bottle_cost),
       });
       setProducts((prev) => prev.map((p) => (p.id === id ? res.data : p)));
       setEditingId(null);
@@ -87,6 +89,8 @@ function ProductsPage() {
               <th>Όνομα</th>
               <th>Κατηγορία</th>
               <th>Μέγεθος φιάλης</th>
+              <th>Κόστος φιάλης</th>
+              <th>€/ml</th>
               <th></th>
             </tr>
           </thead>
@@ -115,6 +119,18 @@ function ProductsPage() {
                     />
                   </td>
                   <td>
+                    <input
+                      name="bottle_cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="€"
+                      value={editForm.bottle_cost}
+                      onChange={handleEditChange}
+                    />
+                  </td>
+                  <td>{formatCostPerMl(editForm.bottle_cost, editForm.bottle_size_ml)}</td>
+                  <td>
                     <button onClick={() => saveEdit(p.id)}>💾</button>
                     <button onClick={cancelEdit}>✖</button>
                   </td>
@@ -125,6 +141,8 @@ function ProductsPage() {
                   <td>{p.name}</td>
                   <td>{p.category}</td>
                   <td>{p.bottle_size_ml} {p.unit}</td>
+                  <td>{formatEuro(p.bottle_cost)}</td>
+                  <td>{formatCostPerMl(p.bottle_cost, p.bottle_size_ml)}</td>
                   <td>
                     <button onClick={() => startEdit(p)}>✏️</button>
                     <button onClick={() => handleDelete(p)}>🗑</button>

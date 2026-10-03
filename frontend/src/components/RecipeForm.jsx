@@ -1,7 +1,8 @@
 import { useState } from "react";
 import api from "../api/client";
+import { toNumberOrNull } from "../utils/format";
 
-const emptyForm = { name: "", is_cocktail: true };
+const emptyForm = { name: "", is_cocktail: true, sell_price: "" };
 
 function RecipeForm({ onCreated }) {
   const [form, setForm] = useState(emptyForm);
@@ -22,6 +23,7 @@ function RecipeForm({ onCreated }) {
       const res = await api.post("/recipes/", {
         name: form.name.trim(),
         is_cocktail: form.is_cocktail,
+        sell_price: toNumberOrNull(form.sell_price),
       });
       onCreated(res.data);
       setForm(emptyForm);
@@ -54,6 +56,16 @@ function RecipeForm({ onCreated }) {
         />
         Κοκτέιλ
       </label>
+
+      <input
+        name="sell_price"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Τιμή πώλησης (€)"
+        value={form.sell_price}
+        onChange={handleChange}
+      />
 
       <button type="submit" disabled={saving}>
         {saving ? "Αποθήκευση..." : "Προσθήκη"}

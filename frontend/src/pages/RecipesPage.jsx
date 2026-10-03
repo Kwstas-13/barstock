@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../api/client";
 import RecipeForm from "../components/RecipeForm";
 import RecipeIngredients from "../components/RecipeIngredients";
+import { formatEuro } from "../utils/format";
 
 function RecipesPage() {
   const [recipes, setRecipes] = useState([]);
@@ -58,6 +59,7 @@ function RecipesPage() {
               <th>ID</th>
               <th>Όνομα</th>
               <th>Τύπος</th>
+              <th>Τιμή πώλησης</th>
               <th></th>
             </tr>
           </thead>
@@ -70,6 +72,7 @@ function RecipesPage() {
                 <td>{r.id}</td>
                 <td>{r.name}</td>
                 <td>{r.is_cocktail ? "🍸 Κοκτέιλ" : "🥃 Απλό"}</td>
+                <td>{formatEuro(r.sell_price)}</td>
                 <td>
                   <button onClick={() => setSelectedId(r.id)}>🧾</button>
                   <button onClick={() => handleDelete(r)}>🗑</button>
