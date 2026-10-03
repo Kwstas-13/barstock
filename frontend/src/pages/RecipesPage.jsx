@@ -28,6 +28,11 @@ function RecipesPage() {
     setRecipes((prev) => [...prev, newRecipe]);
   }
 
+  // ΝΕΟ: ενημερώνει τη συνταγή στη λίστα όταν αλλάζει η τιμή από το πάνελ
+  function handleRecipeUpdated(updated) {
+    setRecipes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
   async function handleDelete(recipe) {
     const ok = window.confirm(`Διαγραφή της συνταγής "${recipe.name}";`);
     if (!ok) return;
@@ -88,6 +93,7 @@ function RecipesPage() {
           key={selectedRecipe.id}
           recipe={selectedRecipe}
           products={products}
+          onRecipeUpdated={handleRecipeUpdated} // ΝΕΟ
         />
       )}
     </div>
