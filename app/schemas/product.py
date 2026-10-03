@@ -7,6 +7,7 @@ class ProductBase(BaseModel):
     category: str
     bottle_size_ml: int
     unit: str = "ml"
+    bottle_cost: float | None = None
 
 
 class ProductCreate(ProductBase):
@@ -18,6 +19,7 @@ class ProductUpdate(BaseModel):
     category: str | None = None
     bottle_size_ml: int | None = None
     unit: str | None = None
+    bottle_cost: float | None = None
 
 
 class ProductOut(ProductBase):

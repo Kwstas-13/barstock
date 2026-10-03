@@ -5,6 +5,7 @@ from datetime import datetime
 class RecipeBase(BaseModel):
     name: str
     is_cocktail: bool = False
+    sell_price: float |  None = None
 
 
 class RecipeCreate(RecipeBase):
@@ -14,6 +15,7 @@ class RecipeCreate(RecipeBase):
 class RecipeUpdate(BaseModel):
     name: str | None = None
     is_cocktail: bool | None = None
+    sell_price: float | None = None
 
 
 class RecipeOut(RecipeBase):
