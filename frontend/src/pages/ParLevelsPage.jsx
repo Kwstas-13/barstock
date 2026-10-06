@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../api/client";
 import ParLevelForm from "../components/ParLevelForm";
 import { formatShift } from "../utils/format";
+import { useShift } from "../context/ShiftContext";
 
 function calcPercent(ideal, current) {
   const i = Number(ideal);
@@ -18,6 +19,7 @@ function ParLevelsPage() {
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const { currentShift } = useShift();
 
   useEffect(() => {
     Promise.all([
@@ -32,7 +34,7 @@ function ParLevelsPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [currentShift?.id]);
 
   const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
   const shiftsById = Object.fromEntries(shifts.map((s) => [s.id, s]));

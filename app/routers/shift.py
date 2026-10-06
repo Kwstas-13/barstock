@@ -72,7 +72,7 @@ def close_shift(shift_id: int, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[ShiftOut])
 def get_shifts(db: Session = Depends(get_db)):
-    return db.query(Shift).all()
+    return db.query(Shift).order_by(Shift.id).all()
 
 
 @router.get("/{shift_id}", response_model=ShiftOut)

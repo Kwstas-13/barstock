@@ -67,7 +67,7 @@ function ParLevelForm({ products, shifts, onCreated }) {
         name="ideal_quantity_ml"
         type="number"
         min="1"
-        placeholder="Ιδανικό (ml)"
+        placeholder="Ιδανικό"
         value={form.ideal_quantity_ml}
         onChange={handleChange}
         required
@@ -77,7 +77,7 @@ function ParLevelForm({ products, shifts, onCreated }) {
         name="current_quantity_ml"
         type="number"
         min="0"
-        placeholder="Τρέχον (ml)"
+        placeholder="Τρέχον"
         value={form.current_quantity_ml}
         onChange={handleChange}
         required

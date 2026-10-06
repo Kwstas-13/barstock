@@ -2,6 +2,7 @@ import { Routes, Route, NavLink, Navigate } from "react-router-dom";
 import ProductsPage from "./pages/ProductsPage";
 import ParLevelsPage from "./pages/ParLevelsPage";
 import RecipesPage from "./pages/RecipesPage";
+import ShiftBar from "./components/ShiftBar";
 
 function App() {
   const linkStyle = ({ isActive }) => ({
@@ -19,6 +20,8 @@ function App() {
         <NavLink to="/par-levels" style={linkStyle}>Par Levels</NavLink>
         <NavLink to="/recipes" style={linkStyle}>Συνταγές</NavLink>
       </nav>
+
+      <ShiftBar />
 
       <Routes>
         <Route path="/" element={<Navigate to="/products" replace />} />
