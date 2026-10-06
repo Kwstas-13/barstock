@@ -31,3 +31,8 @@ export function formatCostPerMl(cost, sizeMl) {
   const value = costPerMl(cost, sizeMl);
   return value === null ? "—" : `${value.toFixed(4)} €`;
 }
+
+export function formatCostPerUnit(cost, size, unit) {
+  const value = costPerMl(cost, size);
+  return value === null ? "—" : `${value.toFixed(4)} €/${unit}`;
+}

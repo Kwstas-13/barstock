@@ -1,9 +1,15 @@
 import { useState } from "react";
 import api from "../api/client";
-import { CATEGORIES } from "../constants";
+import { CATEGORIES, UNITS } from "../constants";
 import { toNumberOrNull } from "../utils/format";
 
-const emptyForm = { name: "", category: "SPIRIT", bottle_size_ml: 700, bottle_cost: "" };
+const emptyForm = {
+  name: "",
+  category: "SPIRIT",
+  bottle_size_ml: 700,
+  unit: "ml",
+  bottle_cost: "",
+};
 
 function ProductForm({ onCreated }) {
   const [form, setForm] = useState(emptyForm);
@@ -25,6 +31,7 @@ function ProductForm({ onCreated }) {
         name: form.name.trim(),
         category: form.category,
         bottle_size_ml: Number(form.bottle_size_ml),
+        unit: form.unit,
         bottle_cost: toNumberOrNull(form.bottle_cost),
       });
       onCreated(res.data);
@@ -59,11 +66,17 @@ function ProductForm({ onCreated }) {
         name="bottle_size_ml"
         type="number"
         min="1"
+        placeholder="Ποσότητα συσκευασίας"
         value={form.bottle_size_ml}
         onChange={handleChange}
         required
       />
-      <span> ml </span>
+
+      <select name="unit" value={form.unit} onChange={handleChange}>
+        {UNITS.map((u) => (
+          <option key={u} value={u}>{u}</option>
+        ))}
+      </select>
 
       <input
         name="bottle_cost"

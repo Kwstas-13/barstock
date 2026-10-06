@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import ProductForm from "../components/ProductForm";
-import { CATEGORIES } from "../constants";
-import { formatEuro, formatCostPerMl, toNumberOrNull } from "../utils/format";
+import { CATEGORIES, UNITS } from "../constants";
+import { formatEuro, formatCostPerUnit, toNumberOrNull } from "../utils/format";
 
 function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -42,6 +42,7 @@ function ProductsPage() {
       name: product.name,
       category: product.category,
       bottle_size_ml: product.bottle_size_ml,
+      unit: product.unit,
       bottle_cost: product.bottle_cost ?? "",
     });
   }
@@ -61,6 +62,7 @@ function ProductsPage() {
         name: editForm.name.trim(),
         category: editForm.category,
         bottle_size_ml: Number(editForm.bottle_size_ml),
+        unit: editForm.unit,
         bottle_cost: toNumberOrNull(editForm.bottle_cost),
       });
       setProducts((prev) => prev.map((p) => (p.id === id ? res.data : p)));
@@ -88,9 +90,9 @@ function ProductsPage() {
               <th>ID</th>
               <th>Όνομα</th>
               <th>Κατηγορία</th>
-              <th>Μέγεθος φιάλης</th>
-              <th>Κόστος φιάλης</th>
-              <th>€/ml</th>
+              <th>Συσκευασία</th>
+              <th>Κόστος</th>
+              <th>Ανά μονάδα</th>
               <th></th>
             </tr>
           </thead>
@@ -117,6 +119,11 @@ function ProductsPage() {
                       value={editForm.bottle_size_ml}
                       onChange={handleEditChange}
                     />
+                    <select name="unit" value={editForm.unit} onChange={handleEditChange}>
+                      {UNITS.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
                   </td>
                   <td>
                     <input
@@ -129,7 +136,9 @@ function ProductsPage() {
                       onChange={handleEditChange}
                     />
                   </td>
-                  <td>{formatCostPerMl(editForm.bottle_cost, editForm.bottle_size_ml)}</td>
+                  <td>
+                    {formatCostPerUnit(editForm.bottle_cost, editForm.bottle_size_ml, editForm.unit)}
+                  </td>
                   <td>
                     <button onClick={() => saveEdit(p.id)}>💾</button>
                     <button onClick={cancelEdit}>✖</button>
@@ -142,7 +151,7 @@ function ProductsPage() {
                   <td>{p.category}</td>
                   <td>{p.bottle_size_ml} {p.unit}</td>
                   <td>{formatEuro(p.bottle_cost)}</td>
-                  <td>{formatCostPerMl(p.bottle_cost, p.bottle_size_ml)}</td>
+                  <td>{formatCostPerUnit(p.bottle_cost, p.bottle_size_ml, p.unit)}</td>
                   <td>
                     <button onClick={() => startEdit(p)}>✏️</button>
                     <button onClick={() => handleDelete(p)}>🗑</button>
