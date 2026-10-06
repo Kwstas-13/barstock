@@ -23,14 +23,21 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
 
   const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
 
+  function unitOf(id) {
+    return productsById[id]?.unit ?? "ml";
+  }
+
   function ingredientCost(item) {
     const product = productsById[item.product_id];
     if (!product) return null;
-    const perMl = costPerMl(product.bottle_cost, product.bottle_size_ml);
-    return perMl === null ? null : perMl * item.quantity_ml;
+    const perUnit = costPerMl(product.bottle_cost, product.bottle_size_ml);
+    return perUnit === null ? null : perUnit * item.quantity_ml;
   }
 
-  const totalMl = ingredients.reduce((sum, i) => sum + i.quantity_ml, 0);
+  const totalLiquidMl = ingredients
+    .filter((i) => unitOf(i.product_id) === "ml")
+    .reduce((sum, i) => sum + i.quantity_ml, 0);
+
   const costs = ingredients.map(ingredientCost);
   const missingCost = costs.some((c) => c === null);
   const totalCost = costs.reduce((sum, c) => sum + (c ?? 0), 0);
@@ -41,6 +48,8 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
       ? (totalCost / sellPrice) * 100
       : null;
   const onTarget = pourCost !== null && pourCost <= POUR_COST_TARGET;
+
+  const selectedUnit = productId ? unitOf(productId) : "";
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -112,7 +121,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
             {ingredients.map((i, index) => (
               <tr key={i.id}>
                 <td>{productsById[i.product_id]?.name ?? `#${i.product_id}`}</td>
-                <td>{i.quantity_ml} ml</td>
+                <td>{i.quantity_ml} {unitOf(i.product_id)}</td>
                 <td>{formatEuro(costs[index])}</td>
                 <td>
                   <button onClick={() => handleDelete(i)}>🗑</button>
@@ -123,7 +132,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
           <tfoot>
             <tr>
               <td><strong>Σύνολο</strong></td>
-              <td><strong>{totalMl} ml</strong></td>
+              <td><strong>{totalLiquidMl} ml υγρά</strong></td>
               <td><strong>{formatEuro(totalCost)}</strong></td>
               <td></td>
             </tr>
@@ -133,7 +142,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
 
       {missingCost && (
         <p style={{ color: "#b45309" }}>
-          ⚠️ Κάποια προϊόντα δεν έχουν κόστος φιάλης. Συμπλήρωσέ το στη σελίδα Προϊόντα.
+          ⚠️ Κάποια προϊόντα δεν έχουν κόστος. Συμπλήρωσέ το στη σελίδα Προϊόντα.
         </p>
       )}
 
@@ -148,11 +157,12 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
         <input
           type="number"
           min="1"
-          placeholder="ml"
+          placeholder="Ποσότητα"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           required
         />
+        <span> {selectedUnit} </span>
 
         <button type="submit" disabled={saving}>
           {saving ? "..." : "Προσθήκη συστατικού"}

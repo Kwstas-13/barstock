@@ -114,6 +114,7 @@ function ParLevelsPage() {
           </thead>
           <tbody>
             {parLevels.map((pl) => {
+              const unit = productsById[pl.product_id]?.unit ?? "ml"; // ΝΕΟ
               const isEditing = editingId === pl.id;
               const values = isEditing ? editForm : pl;
 
@@ -135,6 +136,7 @@ function ParLevelsPage() {
                           value={editForm.ideal_quantity_ml}
                           onChange={handleEditChange}
                         />
+                        <span> {unit}</span> {/* ΝΕΟ */}
                       </td>
                       <td>
                         <input
@@ -144,6 +146,7 @@ function ParLevelsPage() {
                           value={editForm.current_quantity_ml}
                           onChange={handleEditChange}
                         />
+                        <span> {unit}</span> {/* ΝΕΟ */}
                       </td>
                       <td>
                         <input
@@ -158,8 +161,8 @@ function ParLevelsPage() {
                     </>
                   ) : (
                     <>
-                      <td>{pl.ideal_quantity_ml} ml</td>
-                      <td>{pl.current_quantity_ml} ml</td>
+                      <td>{pl.ideal_quantity_ml} {unit}</td>   {/* ΝΕΟ: unit αντί για "ml" */}
+                      <td>{pl.current_quantity_ml} {unit}</td> {/* ΝΕΟ: unit αντί για "ml" */}
                       <td>{pl.threshold_percent}%</td>
                     </>
                   )}
