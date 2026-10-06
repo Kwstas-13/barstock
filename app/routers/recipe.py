@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import require_no_open_shift  # ΝΕΟ
 from app.models.recipe import Recipe
 from app.schemas.recipe import RecipeCreate, RecipeUpdate, RecipeOut
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
 
-@router.post("/", response_model=RecipeOut)
+@router.post("/", response_model=RecipeOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def create_recipe(recipe: RecipeCreate, db: Session = Depends(get_db)):
     new_recipe = Recipe(**recipe.model_dump())
     db.add(new_recipe)
@@ -30,7 +31,7 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     return recipe
 
 
-@router.put("/{recipe_id}", response_model=RecipeOut)
+@router.put("/{recipe_id}", response_model=RecipeOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def update_recipe(recipe_id: int, updates: RecipeUpdate, db: Session = Depends(get_db)):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
@@ -44,7 +45,7 @@ def update_recipe(recipe_id: int, updates: RecipeUpdate, db: Session = Depends(g
     return recipe
 
 
-@router.delete("/{recipe_id}")
+@router.delete("/{recipe_id}", dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:

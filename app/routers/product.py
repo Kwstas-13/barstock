@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import require_no_open_shift  # ΝΕΟ
 from app.models.products import Product
 from app.schemas.product import ProductCreate, ProductUpdate, ProductOut
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.post("/", response_model=ProductOut)
+@router.post("/", response_model=ProductOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     new_product = Product(**product.model_dump())
     db.add(new_product)
@@ -30,7 +31,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 
-@router.put("/{product_id}", response_model=ProductOut)
+@router.put("/{product_id}", response_model=ProductOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def update_product(product_id: int, updates: ProductUpdate, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -44,7 +45,7 @@ def update_product(product_id: int, updates: ProductUpdate, db: Session = Depend
     return product
 
 
-@router.delete("/{product_id}")
+@router.delete("/{product_id}", dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def delete_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:

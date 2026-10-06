@@ -2,13 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import require_no_open_shift  # ΝΕΟ
 from app.models.recipe_ingredient import RecipeIngredient
-from app.schemas.recipe_ingredient import RecipeIngredientCreate, RecipeIngredientUpdate, RecipeIngredientOut
+from app.schemas.recipe_ingredient import (
+    RecipeIngredientCreate,
+    RecipeIngredientUpdate,
+    RecipeIngredientOut,
+)
 
 router = APIRouter(prefix="/recipe-ingredients", tags=["Recipe Ingredients"])
 
 
-@router.post("/", response_model=RecipeIngredientOut)
+@router.post("/", response_model=RecipeIngredientOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def create_recipe_ingredient(item: RecipeIngredientCreate, db: Session = Depends(get_db)):
     new_item = RecipeIngredient(**item.model_dump())
     db.add(new_item)
@@ -33,7 +38,7 @@ def get_recipe_ingredient(item_id: int, db: Session = Depends(get_db)):
     return item
 
 
-@router.put("/{item_id}", response_model=RecipeIngredientOut)
+@router.put("/{item_id}", response_model=RecipeIngredientOut, dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def update_recipe_ingredient(item_id: int, updates: RecipeIngredientUpdate, db: Session = Depends(get_db)):
     item = db.query(RecipeIngredient).filter(RecipeIngredient.id == item_id).first()
     if not item:
@@ -47,7 +52,7 @@ def update_recipe_ingredient(item_id: int, updates: RecipeIngredientUpdate, db: 
     return item
 
 
-@router.delete("/{item_id}")
+@router.delete("/{item_id}", dependencies=[Depends(require_no_open_shift)])  # ΝΕΟ
 def delete_recipe_ingredient(item_id: int, db: Session = Depends(get_db)):
     item = db.query(RecipeIngredient).filter(RecipeIngredient.id == item_id).first()
     if not item:
