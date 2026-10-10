@@ -36,3 +36,9 @@ export function formatCostPerUnit(cost, size, unit) {
   const value = costPerMl(cost, size);
   return value === null ? "—" : `${value.toFixed(4)} €/${unit}`;
 }
+
+export function errorMessage(err) {
+  const detail = err.response?.data?.detail;
+  if (!detail) return err.message;
+  return typeof detail === "string" ? detail : JSON.stringify(detail);
+}

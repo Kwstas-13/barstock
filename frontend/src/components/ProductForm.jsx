@@ -1,7 +1,8 @@
 import { useState } from "react";
 import api from "../api/client";
 import { CATEGORIES, UNITS } from "../constants";
-import { toNumberOrNull } from "../utils/format";
+import { useShift } from "../context/ShiftContext";
+import { errorMessage, toNumberOrNull } from "../utils/format";
 
 const emptyForm = {
   name: "",
@@ -12,6 +13,7 @@ const emptyForm = {
 };
 
 function ProductForm({ onCreated }) {
+  const { isShiftOpen } = useShift();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -37,8 +39,7 @@ function ProductForm({ onCreated }) {
       onCreated(res.data);
       setForm(emptyForm);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      setError(detail ? JSON.stringify(detail) : err.message);
+      setError(errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -46,51 +47,53 @@ function ProductForm({ onCreated }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h3>Νέο προϊόν</h3>
+      <fieldset disabled={isShiftOpen} style={{ border: "none", padding: 0, margin: 0 }}>
+        <h3>Νέο προϊόν</h3>
 
-      <input
-        name="name"
-        placeholder="Όνομα"
-        value={form.name}
-        onChange={handleChange}
-        required
-      />
+        <input
+          name="name"
+          placeholder="Όνομα"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
 
-      <select name="category" value={form.category} onChange={handleChange}>
-        {CATEGORIES.map((c) => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
+        <select name="category" value={form.category} onChange={handleChange}>
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
 
-      <input
-        name="bottle_size_ml"
-        type="number"
-        min="1"
-        placeholder="Ποσότητα συσκευασίας"
-        value={form.bottle_size_ml}
-        onChange={handleChange}
-        required
-      />
+        <input
+          name="bottle_size_ml"
+          type="number"
+          min="1"
+          placeholder="Ποσότητα συσκευασίας"
+          value={form.bottle_size_ml}
+          onChange={handleChange}
+          required
+        />
 
-      <select name="unit" value={form.unit} onChange={handleChange}>
-        {UNITS.map((u) => (
-          <option key={u} value={u}>{u}</option>
-        ))}
-      </select>
+        <select name="unit" value={form.unit} onChange={handleChange}>
+          {UNITS.map((u) => (
+            <option key={u} value={u}>{u}</option>
+          ))}
+        </select>
 
-      <input
-        name="bottle_cost"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Κόστος (€)"
-        value={form.bottle_cost}
-        onChange={handleChange}
-      />
+        <input
+          name="bottle_cost"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Κόστος (€)"
+          value={form.bottle_cost}
+          onChange={handleChange}
+        />
 
-      <button type="submit" disabled={saving}>
-        {saving ? "Αποθήκευση..." : "Προσθήκη"}
-      </button>
+        <button type="submit" disabled={saving}>
+          {saving ? "Αποθήκευση..." : "Προσθήκη"}
+        </button>
+      </fieldset>
 
       {error && <p style={{ color: "red" }}>Σφάλμα: {error}</p>}
     </form>

@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import ProductForm from "../components/ProductForm";
+import LockNotice from "../components/LockNotice";
 import { CATEGORIES, UNITS } from "../constants";
-import { formatEuro, formatCostPerUnit, toNumberOrNull } from "../utils/format";
+import { useShift } from "../context/ShiftContext";
+import { errorMessage, formatEuro, formatCostPerUnit, toNumberOrNull } from "../utils/format";
+
+const LOCKED_TITLE = "Κλειδωμένο όσο η βάρδια είναι ανοιχτή";
 
 function ProductsPage() {
+  const { isShiftOpen } = useShift();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,6 +24,10 @@ function ProductsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (isShiftOpen) setEditingId(null);
+  }, [isShiftOpen]);
+
   function handleCreated(newProduct) {
     setProducts((prev) => [...prev, newProduct]);
   }
@@ -31,8 +40,7 @@ function ProductsPage() {
       await api.delete(`/products/${product.id}`);
       setProducts((prev) => prev.filter((p) => p.id !== product.id));
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η διαγραφή απέτυχε: ${detail ?? err.message}`);
+      alert(`Η διαγραφή απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -68,8 +76,7 @@ function ProductsPage() {
       setProducts((prev) => prev.map((p) => (p.id === id ? res.data : p)));
       setEditingId(null);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η αποθήκευση απέτυχε: ${detail ? JSON.stringify(detail) : err.message}`);
+      alert(`Η αποθήκευση απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -79,6 +86,7 @@ function ProductsPage() {
   return (
     <div>
       <h2>Προϊόντα</h2>
+      <LockNotice />
       <ProductForm onCreated={handleCreated} />
 
       {products.length === 0 ? (
@@ -153,8 +161,20 @@ function ProductsPage() {
                   <td>{formatEuro(p.bottle_cost)}</td>
                   <td>{formatCostPerUnit(p.bottle_cost, p.bottle_size_ml, p.unit)}</td>
                   <td>
-                    <button onClick={() => startEdit(p)}>✏️</button>
-                    <button onClick={() => handleDelete(p)}>🗑</button>
+                    <button
+                      onClick={() => startEdit(p)}
+                      disabled={isShiftOpen}
+                      title={isShiftOpen ? LOCKED_TITLE : "Επεξεργασία"}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      disabled={isShiftOpen}
+                      title={isShiftOpen ? LOCKED_TITLE : "Διαγραφή"}
+                    >
+                      🗑
+                    </button>
                   </td>
                 </tr>
               )
