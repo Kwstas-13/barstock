@@ -11,8 +11,8 @@ export function ShiftProvider({ children }) {
   useEffect(() => {
     api.get("/shifts/")
       .then((res) => {
-        const open = res.data.find((s) => s.status === "OPEN");
-        setCurrentShift(open ?? null);
+        const active = res.data.find((s) => s.status !== "CLOSED");
+        setCurrentShift(active ?? null);
       })
       .catch((err) => alert(`Σφάλμα φόρτωσης βάρδιας: ${err.message}`))
       .finally(() => setLoading(false));
@@ -20,6 +20,16 @@ export function ShiftProvider({ children }) {
 
   async function openShift() {
     const res = await api.post("/shifts/", { opened_by_user_id: MANAGER_USER_ID });
+    setCurrentShift(res.data);
+  }
+
+  async function pauseShift() {
+    const res = await api.post(`/shifts/${currentShift.id}/pause`);
+    setCurrentShift(res.data);
+  }
+
+  async function resumeShift() {
+    const res = await api.post(`/shifts/${currentShift.id}/resume`);
     setCurrentShift(res.data);
   }
 
@@ -31,9 +41,12 @@ export function ShiftProvider({ children }) {
 
   const value = {
     currentShift,
-    isShiftOpen: currentShift !== null,
+    isShiftOpen: currentShift?.status === "OPEN",
+    isShiftPaused: currentShift?.status === "PAUSED",
     loading,
     openShift,
+    pauseShift,
+    resumeShift,
     closeShift,
   };
 

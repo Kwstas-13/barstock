@@ -11,6 +11,15 @@ from app.schemas.shift import ShiftOpen, ShiftOut
 
 router = APIRouter(prefix="/shifts", tags=["Shifts"])
 
+ACTIVE_STATUSES = ["OPEN", "PAUSED"]  # ΝΕΟ: βάρδιες που δεν έχουν κλείσει
+
+
+def get_shift_or_404(db: Session, shift_id: int) -> Shift:  # ΝΕΟ
+    shift = db.query(Shift).filter(Shift.id == shift_id).first()
+    if not shift:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    return shift
+
 
 @router.post("/", response_model=ShiftOut)
 def open_shift(data: ShiftOpen, db: Session = Depends(get_db)):
@@ -18,11 +27,12 @@ def open_shift(data: ShiftOpen, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    already_open = db.query(Shift).filter(Shift.status == "OPEN").first()
-    if already_open:
+    # ΑΛΛΑΓΗ: μετράει και τις βάρδιες σε παύση
+    already_active = db.query(Shift).filter(Shift.status.in_(ACTIVE_STATUSES)).first()
+    if already_active:
         raise HTTPException(
             status_code=400,
-            detail=f"Shift {already_open.id} is still open. Close it first.",
+            detail=f"Η βάρδια #{already_active.id} δεν έχει κλείσει ακόμα.",
         )
 
     previous = db.query(Shift).order_by(Shift.id.desc()).first()
@@ -55,13 +65,36 @@ def open_shift(data: ShiftOpen, db: Session = Depends(get_db)):
     return new_shift
 
 
+@router.post("/{shift_id}/pause", response_model=ShiftOut)  # ΝΕΟ
+def pause_shift(shift_id: int, db: Session = Depends(get_db)):
+    shift = get_shift_or_404(db, shift_id)
+    if shift.status != "OPEN":
+        raise HTTPException(status_code=400, detail="Μόνο ανοιχτή βάρδια μπαίνει σε παύση.")
+
+    shift.status = "PAUSED"
+    db.commit()
+    db.refresh(shift)
+    return shift
+
+
+@router.post("/{shift_id}/resume", response_model=ShiftOut)  # ΝΕΟ
+def resume_shift(shift_id: int, db: Session = Depends(get_db)):
+    shift = get_shift_or_404(db, shift_id)
+    if shift.status != "PAUSED":
+        raise HTTPException(status_code=400, detail="Η βάρδια δεν είναι σε παύση.")
+
+    shift.status = "OPEN"
+    db.commit()
+    db.refresh(shift)
+    return shift
+
+
 @router.post("/{shift_id}/close", response_model=ShiftOut)
 def close_shift(shift_id: int, db: Session = Depends(get_db)):
-    shift = db.query(Shift).filter(Shift.id == shift_id).first()
-    if not shift:
-        raise HTTPException(status_code=404, detail="Shift not found")
-    if shift.status != "OPEN":
-        raise HTTPException(status_code=400, detail="Shift is already closed")
+    shift = get_shift_or_404(db, shift_id)
+    # ΑΛΛΑΓΗ: κλείνει είτε είναι ανοιχτή είτε σε παύση
+    if shift.status not in ACTIVE_STATUSES:
+        raise HTTPException(status_code=400, detail="Η βάρδια έχει ήδη κλείσει.")
 
     shift.status = "CLOSED"
     shift.ended_at = datetime.now(timezone.utc)
@@ -77,7 +110,4 @@ def get_shifts(db: Session = Depends(get_db)):
 
 @router.get("/{shift_id}", response_model=ShiftOut)
 def get_shift(shift_id: int, db: Session = Depends(get_db)):
-    shift = db.query(Shift).filter(Shift.id == shift_id).first()
-    if not shift:
-        raise HTTPException(status_code=404, detail="Shift not found")
-    return shift
+    return get_shift_or_404(db, shift_id)
