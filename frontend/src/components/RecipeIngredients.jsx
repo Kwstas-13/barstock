@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import { POUR_COST_TARGET } from "../constants";
-import { costPerMl, formatEuro, toNumberOrNull } from "../utils/format";
+import { useShift } from "../context/ShiftContext";
+import { costPerMl, errorMessage, formatEuro, toNumberOrNull } from "../utils/format";
+
+const LOCKED_TITLE = "Κλειδωμένο όσο η βάρδια είναι ανοιχτή";
+const fieldsetStyle = { border: "none", padding: 0, margin: 0 };
 
 function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
+  const { isShiftOpen } = useShift();
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,8 +70,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
       setProductId("");
       setQuantity("");
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η προσθήκη απέτυχε: ${detail ? JSON.stringify(detail) : err.message}`);
+      alert(`Η προσθήκη απέτυχε: ${errorMessage(err)}`);
     } finally {
       setSaving(false);
     }
@@ -81,8 +85,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
       await api.delete(`/recipe-ingredients/${item.id}`);
       setIngredients((prev) => prev.filter((i) => i.id !== item.id));
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η διαγραφή απέτυχε: ${detail ?? err.message}`);
+      alert(`Η διαγραφή απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -93,8 +96,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
       });
       onRecipeUpdated(res.data);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η αποθήκευση απέτυχε: ${detail ? JSON.stringify(detail) : err.message}`);
+      alert(`Η αποθήκευση απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -124,7 +126,13 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
                 <td>{i.quantity_ml} {unitOf(i.product_id)}</td>
                 <td>{formatEuro(costs[index])}</td>
                 <td>
-                  <button onClick={() => handleDelete(i)}>🗑</button>
+                  <button
+                    onClick={() => handleDelete(i)}
+                    disabled={isShiftOpen}
+                    title={isShiftOpen ? LOCKED_TITLE : "Αφαίρεση"}
+                  >
+                    🗑
+                  </button>
                 </td>
               </tr>
             ))}
@@ -147,31 +155,33 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
       )}
 
       <form onSubmit={handleAdd}>
-        <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
-          <option value="">-- Προϊόν --</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+        <fieldset disabled={isShiftOpen} style={fieldsetStyle}>
+          <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
+            <option value="">-- Προϊόν --</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
 
-        <input
-          type="number"
-          min="1"
-          placeholder="Ποσότητα"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          required
-        />
-        <span> {selectedUnit} </span>
+          <input
+            type="number"
+            min="1"
+            placeholder="Ποσότητα"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            required
+          />
+          <span> {selectedUnit} </span>
 
-        <button type="submit" disabled={saving}>
-          {saving ? "..." : "Προσθήκη συστατικού"}
-        </button>
+          <button type="submit" disabled={saving}>
+            {saving ? "..." : "Προσθήκη συστατικού"}
+          </button>
+        </fieldset>
       </form>
 
       <h4>Τιμή & Pour cost</h4>
 
-      <div>
+      <fieldset disabled={isShiftOpen} style={fieldsetStyle}>
         Τιμή πώλησης:{" "}
         <input
           type="number"
@@ -182,7 +192,7 @@ function RecipeIngredients({ recipe, products, onRecipeUpdated }) {
           onChange={(e) => setPriceInput(e.target.value)}
         />
         <button onClick={handleSavePrice}>💾</button>
-      </div>
+      </fieldset>
 
       <p>
         Pour cost:{" "}

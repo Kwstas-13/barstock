@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import api from "../api/client";
 import RecipeForm from "../components/RecipeForm";
 import RecipeIngredients from "../components/RecipeIngredients";
-import { formatEuro } from "../utils/format";
+import LockNotice from "../components/LockNotice";
+import { useShift } from "../context/ShiftContext";
+import { errorMessage, formatEuro } from "../utils/format";
+
+const LOCKED_TITLE = "Κλειδωμένο όσο η βάρδια είναι ανοιχτή";
 
 function RecipesPage() {
+  const { isShiftOpen } = useShift();
   const [recipes, setRecipes] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +33,6 @@ function RecipesPage() {
     setRecipes((prev) => [...prev, newRecipe]);
   }
 
-  // ΝΕΟ: ενημερώνει τη συνταγή στη λίστα όταν αλλάζει η τιμή από το πάνελ
   function handleRecipeUpdated(updated) {
     setRecipes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }
@@ -42,8 +46,7 @@ function RecipesPage() {
       setRecipes((prev) => prev.filter((r) => r.id !== recipe.id));
       if (selectedId === recipe.id) setSelectedId(null);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η διαγραφή απέτυχε: ${detail ?? err.message}`);
+      alert(`Η διαγραφή απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -53,6 +56,7 @@ function RecipesPage() {
   return (
     <div>
       <h2>Συνταγές</h2>
+      <LockNotice />
       <RecipeForm onCreated={handleCreated} />
 
       {recipes.length === 0 ? (
@@ -79,8 +83,16 @@ function RecipesPage() {
                 <td>{r.is_cocktail ? "🍸 Κοκτέιλ" : "🥃 Απλό"}</td>
                 <td>{formatEuro(r.sell_price)}</td>
                 <td>
-                  <button onClick={() => setSelectedId(r.id)}>🧾</button>
-                  <button onClick={() => handleDelete(r)}>🗑</button>
+                  <button onClick={() => setSelectedId(r.id)} title="Συστατικά">
+                    🧾
+                  </button>
+                  <button
+                    onClick={() => handleDelete(r)}
+                    disabled={isShiftOpen}
+                    title={isShiftOpen ? LOCKED_TITLE : "Διαγραφή"}
+                  >
+                    🗑
+                  </button>
                 </td>
               </tr>
             ))}
@@ -93,7 +105,7 @@ function RecipesPage() {
           key={selectedRecipe.id}
           recipe={selectedRecipe}
           products={products}
-          onRecipeUpdated={handleRecipeUpdated} // ΝΕΟ
+          onRecipeUpdated={handleRecipeUpdated}
         />
       )}
     </div>
