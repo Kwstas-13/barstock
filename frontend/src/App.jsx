@@ -2,6 +2,7 @@ import { Routes, Route, NavLink, Navigate } from "react-router-dom";
 import ProductsPage from "./pages/ProductsPage";
 import ParLevelsPage from "./pages/ParLevelsPage";
 import RecipesPage from "./pages/RecipesPage";
+import TillPage from "./pages/TillPage";
 import ShiftBar from "./components/ShiftBar";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
       <h1>BarStock</h1>
 
       <nav>
+        <NavLink to="/till" style={linkStyle}>🍸 Ταμείο</NavLink>
         <NavLink to="/products" style={linkStyle}>Προϊόντα</NavLink>
         <NavLink to="/par-levels" style={linkStyle}>Par Levels</NavLink>
         <NavLink to="/recipes" style={linkStyle}>Συνταγές</NavLink>
@@ -24,7 +26,8 @@ function App() {
       <ShiftBar />
 
       <Routes>
-        <Route path="/" element={<Navigate to="/products" replace />} />
+        <Route path="/" element={<Navigate to="/till" replace />} />
+        <Route path="/till" element={<TillPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/par-levels" element={<ParLevelsPage />} />
         <Route path="/recipes" element={<RecipesPage />} />
