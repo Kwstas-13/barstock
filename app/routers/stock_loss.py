@@ -23,7 +23,7 @@ def create_stock_loss(loss_in: StockLossCreate, db: Session = Depends(get_db)):
     if not shift:
         raise HTTPException(status_code=404, detail="Shift not found")
     if shift.status != "OPEN":
-        raise HTTPException(status_code=400, detail="Shift is not open")
+        raise HTTPException(status_code=400, detail="Η βάρδια δεν είναι ανοιχτή.")
 
     user = db.query(User).filter(User.id == loss_in.user_id).first()
     if not user:
@@ -40,7 +40,7 @@ def create_stock_loss(loss_in: StockLossCreate, db: Session = Depends(get_db)):
     if not par_level:
         raise HTTPException(
             status_code=400,
-            detail="No par level for this product in this shift",
+            detail=f"Το {product.name} δεν έχει par level σε αυτή τη βάρδια.",
         )
 
     new_loss = StockLoss(
@@ -72,8 +72,11 @@ def create_stock_loss(loss_in: StockLossCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[StockLossOut])
-def get_stock_losses(db: Session = Depends(get_db)):
-    return db.query(StockLoss).all()
+def get_stock_losses(shift_id: int | None = None, db: Session = Depends(get_db)):  # ΝΕΟ: φίλτρο
+    query = db.query(StockLoss)
+    if shift_id is not None:
+        query = query.filter(StockLoss.shift_id == shift_id)
+    return query.order_by(StockLoss.id).all()
 
 
 @router.get("/{loss_id}", response_model=StockLossOut)

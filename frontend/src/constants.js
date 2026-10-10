@@ -11,3 +11,20 @@ export const SHIFT_STATUS_LABELS = {
   PAUSED: "🟡 Σε παύση",
   CLOSED: "⚪ Κλειστή",
 };
+
+// Οι επιλογές της φόρμας (όπως αποφασίσαμε: 3 επιλογές)
+export const LOSS_TYPE_OPTIONS = [
+  { value: "STAFF_DRINK", label: "🍹 Ποτό προσωπικού" },
+  { value: "BREAKAGE", label: "💔 Σπάσιμο / Χύσιμο" },
+  { value: "OTHER", label: "❓ Άλλο" },
+];
+
+// Για εμφάνιση στη λίστα (μαζί με το SPILLAGE, αν υπάρχει από παλιά)
+export const LOSS_TYPE_LABELS = {
+  STAFF_DRINK: "🍹 Ποτό προσωπικού",
+  BREAKAGE: "💔 Σπάσιμο / Χύσιμο",
+  SPILLAGE: "💔 Σπάσιμο / Χύσιμο",
+  OTHER: "❓ Άλλο",
+};
+
+export const STANDARD_POUR_ML = 40;

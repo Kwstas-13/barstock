@@ -1,33 +1,52 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
-import { MANAGER_USER_ID } from "../constants";
+import StockLossForm from "../components/StockLossForm";
+import { LOSS_TYPE_LABELS, MANAGER_USER_ID } from "../constants";
 import { useShift } from "../context/ShiftContext";
 import { errorMessage, formatEuro } from "../utils/format";
+
+function formatTime(isoString) {
+  return new Date(isoString).toLocaleTimeString("el-GR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
 function TillPage() {
   const { currentShift, isShiftOpen, isShiftPaused } = useShift();
   const [recipes, setRecipes] = useState([]);
+  const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [losses, setLosses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Οι συνταγές φορτώνονται μία φορά
+  // Συνταγές και προϊόντα φορτώνονται μία φορά
   useEffect(() => {
-    api.get("/recipes/")
-      .then((res) => setRecipes(res.data))
+    Promise.all([api.get("/recipes/"), api.get("/products/")])
+      .then(([recRes, prodRes]) => {
+        setRecipes(recRes.data);
+        setProducts(prodRes.data);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  // Οι παραγγελίες της τρέχουσας βάρδιας, ξανά όποτε αλλάζει βάρδια
+  // Παραγγελίες και φύρα της τρέχουσας βάρδιας
   useEffect(() => {
     if (!currentShift) {
       setOrders([]);
+      setLosses([]);
       return;
     }
-    api.get("/orders/", { params: { shift_id: currentShift.id } })
-      .then((res) => setOrders(res.data))
+    const params = { params: { shift_id: currentShift.id } };
+    Promise.all([api.get("/orders/", params), api.get("/stock-losses/", params)])
+      .then(([ordRes, lossRes]) => {
+        setOrders(ordRes.data);
+        setLosses(lossRes.data);
+      })
       .catch((err) => setError(err.message));
   }, [currentShift?.id]);
 
@@ -37,6 +56,8 @@ function TillPage() {
     const timerId = setTimeout(() => setToast(null), 2500);
     return () => clearTimeout(timerId);
   }, [toast]);
+
+  const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
 
   const countByRecipe = {};
   for (const o of orders) {
@@ -58,6 +79,12 @@ function TillPage() {
     } catch (err) {
       setToast({ ok: false, text: `❌ ${recipe.name}: ${errorMessage(err)}` });
     }
+  }
+
+  function handleLossCreated(newLoss) {
+    setLosses((prev) => [...prev, newLoss]);
+    const name = productsById[newLoss.product_id]?.name ?? "Προϊόν";
+    setToast({ ok: true, text: `💔 Φύρα ${name} καταχωρήθηκε` });
   }
 
   if (loading) return <p>Φόρτωση...</p>;
@@ -137,6 +164,44 @@ function TillPage() {
           );
         })}
       </div>
+
+      {/* ΝΕΟ: Φύρα βάρδιας */}
+      {currentShift && (
+        <section style={{ marginTop: "2rem" }}>
+          <h3>💔 Φύρα βάρδιας</h3>
+          <StockLossForm products={products} onCreated={handleLossCreated} />
+
+          {losses.length === 0 ? (
+            <p>Δεν έχει καταχωρηθεί φύρα σε αυτή τη βάρδια.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Ώρα</th>
+                  <th>Προϊόν</th>
+                  <th>Ποσότητα</th>
+                  <th>Τύπος</th>
+                  <th>Σχόλιο</th>
+                </tr>
+              </thead>
+              <tbody>
+                {losses.map((l) => {
+                  const product = productsById[l.product_id];
+                  return (
+                    <tr key={l.id}>
+                      <td>{formatTime(l.recorded_at)}</td>
+                      <td>{product?.name ?? `#${l.product_id}`}</td>
+                      <td>{l.quantity_ml} {product?.unit ?? "ml"}</td>
+                      <td>{LOSS_TYPE_LABELS[l.loss_type] ?? l.loss_type}</td>
+                      <td>{l.note ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
 
       {toast && (
         <div
