@@ -42,3 +42,15 @@ export function errorMessage(err) {
   if (!detail) return err.message;
   return typeof detail === "string" ? detail : JSON.stringify(detail);
 }
+
+export function formatDateTime(isoString) {
+  return new Date(isoString).toLocaleString("el-GR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}

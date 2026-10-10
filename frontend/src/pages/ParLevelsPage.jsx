@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import ParLevelForm from "../components/ParLevelForm";
-import { formatShift } from "../utils/format";
+import { SHIFT_STATUS_LABELS } from "../constants";
 import { useShift } from "../context/ShiftContext";
+import { errorMessage, formatDateTime } from "../utils/format";
 
 function calcPercent(ideal, current) {
   const i = Number(ideal);
@@ -11,6 +12,7 @@ function calcPercent(ideal, current) {
 }
 
 function ParLevelsPage() {
+  const { currentShift } = useShift();
   const [parLevels, setParLevels] = useState([]);
   const [products, setProducts] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -19,7 +21,6 @@ function ParLevelsPage() {
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const { currentShift } = useShift();
 
   useEffect(() => {
     Promise.all([
@@ -34,10 +35,22 @@ function ParLevelsPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [currentShift?.id]);
+  }, [currentShift?.id, currentShift?.status]);
 
   const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
-  const shiftsById = Object.fromEntries(shifts.map((s) => [s.id, s]));
+
+  // Ομάδες: μία ανά βάρδια, η νεότερη πρώτη, μόνο όσες έχουν par levels
+  const groups = [...shifts]
+    .sort((a, b) => b.id - a.id)
+    .map((shift) => ({
+      shift,
+      rows: parLevels
+  .filter((pl) => pl.shift_id === shift.id)
+  .sort((a, b) =>
+    (productsById[a.product_id]?.name ?? "").localeCompare(productsById[b.product_id]?.name ?? "", "el")
+  ),
+    }))
+    .filter((group) => group.rows.length > 0);
 
   function handleCreated(newParLevel) {
     setParLevels((prev) => [...prev, newParLevel]);
@@ -52,8 +65,7 @@ function ParLevelsPage() {
       await api.delete(`/par-levels/${parLevel.id}`);
       setParLevels((prev) => prev.filter((pl) => pl.id !== parLevel.id));
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η διαγραφή απέτυχε: ${detail ?? err.message}`);
+      alert(`Η διαγραφή απέτυχε: ${errorMessage(err)}`);
     }
   }
 
@@ -85,9 +97,99 @@ function ParLevelsPage() {
       setParLevels((prev) => prev.map((pl) => (pl.id === id ? res.data : pl)));
       setEditingId(null);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      alert(`Η αποθήκευση απέτυχε: ${detail ? JSON.stringify(detail) : err.message}`);
+      alert(`Η αποθήκευση απέτυχε: ${errorMessage(err)}`);
     }
+  }
+
+  function renderRow(pl) {
+    const unit = productsById[pl.product_id]?.unit ?? "ml";
+    const isEditing = editingId === pl.id;
+    const values = isEditing ? editForm : pl;
+
+    const percent = calcPercent(values.ideal_quantity_ml, values.current_quantity_ml);
+    const isLow = percent < Number(values.threshold_percent);
+
+    return (
+      <tr key={pl.id} style={isLow ? { backgroundColor: "#ffe5e5" } : undefined}>
+        <td>{productsById[pl.product_id]?.name ?? `#${pl.product_id}`}</td>
+
+        {isEditing ? (
+          <>
+            <td>
+              <input
+                name="ideal_quantity_ml"
+                type="number"
+                min="1"
+                value={editForm.ideal_quantity_ml}
+                onChange={handleEditChange}
+              />
+              <span> {unit}</span>
+            </td>
+            <td>
+              <input
+                name="current_quantity_ml"
+                type="number"
+                min="0"
+                value={editForm.current_quantity_ml}
+                onChange={handleEditChange}
+              />
+              <span> {unit}</span>
+            </td>
+            <td>
+              <input
+                name="threshold_percent"
+                type="number"
+                min="1"
+                max="100"
+                value={editForm.threshold_percent}
+                onChange={handleEditChange}
+              />
+            </td>
+          </>
+        ) : (
+          <>
+            <td>{pl.ideal_quantity_ml} {unit}</td>
+            <td>{pl.current_quantity_ml} {unit}</td>
+            <td>{pl.threshold_percent}%</td>
+          </>
+        )}
+
+        <td>{percent}%</td>
+        <td>{isLow ? "⚠️ Χαμηλό" : "✅ OK"}</td>
+        <td>
+          {isEditing ? (
+            <>
+              <button onClick={() => saveEdit(pl.id)}>💾</button>
+              <button onClick={cancelEdit}>✖</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => startEdit(pl)}>✏️</button>
+              <button onClick={() => handleDelete(pl)}>🗑</button>
+            </>
+          )}
+        </td>
+      </tr>
+    );
+  }
+
+  function renderTable(rows) {
+    return (
+      <table style={{ width: "100%" }}>
+        <thead>
+          <tr>
+            <th>Προϊόν</th>
+            <th>Ιδανικό</th>
+            <th>Τρέχον</th>
+            <th>Όριο</th>
+            <th>%</th>
+            <th>Κατάσταση</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>{rows.map(renderRow)}</tbody>
+      </table>
+    );
   }
 
   if (loading) return <p>Φόρτωση...</p>;
@@ -98,98 +200,48 @@ function ParLevelsPage() {
       <h2>Par Levels</h2>
       <ParLevelForm products={products} shifts={shifts} onCreated={handleCreated} />
 
-      {parLevels.length === 0 ? (
-        <p>Δεν υπάρχουν par levels ακόμα.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Προϊόν</th>
-              <th>Βάρδια</th>
-              <th>Ιδανικό</th>
-              <th>Τρέχον</th>
-              <th>Όριο</th>
-              <th>%</th>
-              <th>Κατάσταση</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {parLevels.map((pl) => {
-              const unit = productsById[pl.product_id]?.unit ?? "ml"; // ΝΕΟ
-              const isEditing = editingId === pl.id;
-              const values = isEditing ? editForm : pl;
+      {groups.length === 0 && <p>Δεν υπάρχουν par levels ακόμα.</p>}
 
-              const percent = calcPercent(values.ideal_quantity_ml, values.current_quantity_ml);
-              const isLow = percent < Number(values.threshold_percent);
+      {groups.map(({ shift, rows }) => {
+        const title = (
+          <>
+            <strong>Βάρδια #{shift.id}</strong> · {formatDateTime(shift.started_at)} ·{" "}
+            {SHIFT_STATUS_LABELS[shift.status] ?? shift.status}
+          </>
+        );
 
-              return (
-                <tr key={pl.id} style={isLow ? { backgroundColor: "#ffe5e5" } : undefined}>
-                  <td>{productsById[pl.product_id]?.name ?? `#${pl.product_id}`}</td>
-                  <td>{formatShift(shiftsById[pl.shift_id])}</td>
+        if (shift.status !== "CLOSED") {
+          return (
+            <div
+              key={shift.id}
+              style={{
+                border: "3px solid #1f2937",
+                borderRadius: "8px",
+                padding: "0.75rem",
+                margin: "1rem 0",
+              }}
+            >
+              <div style={{ marginBottom: "0.5rem" }}>{title}</div>
+              {renderTable(rows)}
+            </div>
+          );
+        }
 
-                  {isEditing ? (
-                    <>
-                      <td>
-                        <input
-                          name="ideal_quantity_ml"
-                          type="number"
-                          min="1"
-                          value={editForm.ideal_quantity_ml}
-                          onChange={handleEditChange}
-                        />
-                        <span> {unit}</span> {/* ΝΕΟ */}
-                      </td>
-                      <td>
-                        <input
-                          name="current_quantity_ml"
-                          type="number"
-                          min="0"
-                          value={editForm.current_quantity_ml}
-                          onChange={handleEditChange}
-                        />
-                        <span> {unit}</span> {/* ΝΕΟ */}
-                      </td>
-                      <td>
-                        <input
-                          name="threshold_percent"
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={editForm.threshold_percent}
-                          onChange={handleEditChange}
-                        />
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td>{pl.ideal_quantity_ml} {unit}</td>   {/* ΝΕΟ: unit αντί για "ml" */}
-                      <td>{pl.current_quantity_ml} {unit}</td> {/* ΝΕΟ: unit αντί για "ml" */}
-                      <td>{pl.threshold_percent}%</td>
-                    </>
-                  )}
-
-                  <td>{percent}%</td>
-                  <td>{isLow ? "⚠️ Χαμηλό" : "✅ OK"}</td>
-                  <td>
-                    {isEditing ? (
-                      <>
-                        <button onClick={() => saveEdit(pl.id)}>💾</button>
-                        <button onClick={cancelEdit}>✖</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => startEdit(pl)}>✏️</button>
-                        <button onClick={() => handleDelete(pl)}>🗑</button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+        return (
+          <details
+            key={shift.id}
+            style={{
+              border: "1px solid #d1d5db",
+              borderRadius: "8px",
+              padding: "0.5rem 0.75rem",
+              margin: "0.5rem 0",
+            }}
+          >
+            <summary style={{ cursor: "pointer" }}>{title}</summary>
+            {renderTable(rows)}
+          </details>
+        );
+      })}
     </div>
   );
 }

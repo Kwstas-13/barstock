@@ -12,6 +12,8 @@ class OrderCreate(BaseModel):
 class OrderOut(OrderCreate):
     id: int
     ordered_at: datetime
+    unit_price: float | None = None  # ΝΕΟ
+    unit_cost: float | None = None   # ΝΕΟ
 
     class Config:
         from_attributes = True
